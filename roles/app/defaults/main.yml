@@ -1,0 +1,14 @@
+---
+# defaults file for app
+app_secret_key_base: "any string"
+app_rails_env: "production"
+app_rails_log_to_stdout: 1
+app_app_user: "app_user"
+app_db_host: "127.0.0.1"
+app_db_port: "5432"
+app_db_name: "db_app"
+app_db_user: "{{ app_user }}"
+app_db_password: "password"
+app_version_ruby: "2.6.0"
+app_public_ssh_key: "~/.ssh/id_rsa.pub"
+

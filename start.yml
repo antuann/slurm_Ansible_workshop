@@ -11,6 +11,18 @@
       rp_db_name: "{{ db_name }}"
       rp_db_user: "{{ app_user }}"
       rp_db_password: "{{ db_password }}"
+    - role: app
+      app_db_host: "{{ db_host }}"
+      app_db_port: "{{ db_port }}"
+      app_db_name: "{{ db_name }}"
+      app_db_user: "{{ app_user }}"
+      app_db_password: "{{ db_password }}"
+      app_secret_key_base: "{{ secret_key_base }}"
+      app_rails_env: "{{ rails_env }}"
+      app_rails_log_to_stdout: "{{ rails_log_to_stdout }}"
+      app_app_user: "{{ app_user }}"
+      app_version_ruby: "2.6.0"
+      app_public_ssh_key: "~/.ssh/id_rsa.pub"
  
   vars_files:
     - app_settings.yml
@@ -24,73 +36,25 @@
       owner: root
       group: root
       mode: 0644
-  
+    notify:
+    - Reload nginx
+
   - name: "Create nginx user"
     ansible.builtin.user:
       name: "nginx"
       comment: "user for start nginx"
       create_home: true
       shell: /bin/bash
+    notify:
+    - Reload nginx
 
-  - name: "creating a user in ubuntu"
-    ansible.builtin.user:
-      name: "{{ app_user }}"
-      comment: "user for start app"
-      create_home: true
-      shell: /bin/bash
-      groups: sudo
-    when: ansible_os_family == 'Debian'
-
-  - name: "creating a user in centos"
-    ansible.builtin.user:
-      name: "{{ app_user }}"
-      comment: "user for start app"
-      create_home: true
-      shell: /bin/bash
-      groups: wheel
-    when: ansible_os_family == 'RedHat'
-
-
-  - name: Add authorized key id_rsa.pub
-    authorized_key:
-      user: "{{ app_user }}"
-      state: present
-      key: "{{ lookup('file', '{{ public_ssh_key }}') }}"
-  
-  - name: "copy application files to /opt"
-    ansible.builtin.unarchive:
-      src: xpaste_practicum.tar.gz
-      dest: /opt
-
-  - name: "grant user rights to application files"
-    ansible.builtin.file:
-      path: /opt/xpaste_practicum
-      state: directory
-      recurse: true
-      owner: "{{ app_user }}"
-      group: "{{ app_user }}"
-
-  - name: "creating a service file for the application"
-    ansible.builtin.template:
-      src: templates/app.service.j2
-      dest: /etc/systemd/system/app.service
-      owner: root
-      group: root
-      mode: 0644
-
-  - name: "creating a launch file for the application"
-    ansible.builtin.template:
-      src: templates/start.sh.j2
-      dest: /opt/xpaste_practicum/bin/start.sh
-      owner: "{{ app_user }}"
-      group: "{{ app_user }}"
-      mode: 0755
-  
-  - name: Enabled Service app
-    ansible.builtin.service:
-      name: app
-      enabled: yes
-      state: stopped
+  - name: permit traffic in default zone for https service
+    ansible.posix.firewalld:
+      service: http
+      permanent: true
+      state: enabled
+    notify:
+    - Reload firewalld
 
   handlers:
     - name: "Restart postgres"
@@ -98,11 +62,18 @@
         name: postgresql
         state: restarted
 
-  #Дальше мы устанавливаем приложение, там всё сложно поэтому вынес в отдельный ямлик... 
-  # наверно переделаю в роль если успею
-- import_playbook: ubuntu_app_install.yml 
-  when: ansible_os_family == 'Debian'
+    - name: "Restart app"
+      ansible.builtin.service:
+        name: app
+        state: restarted
 
-- import_playbook: centos_app_install.yml
-  when: ansible_os_family == 'RedHat'
+    - name: "Reload nginx"
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
+   
+    - name: "Reload firewalld"
+      ansible.builtin.service:
+        name: firewalld
+        state: reloaded
 
