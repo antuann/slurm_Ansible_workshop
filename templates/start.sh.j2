@@ -1,0 +1,14 @@
+#!/bin/bash
+cd /opt/xpaste_practicum/bin
+export PATH=$PATH:/opt/rbenv/bin:/opt/rbenv/versions/{{ version_ruby }}/bin
+export SECRET_KEY_BASE="{{ secret_key_base }}"
+export RAILS_ENV="{{ rails_env }}"
+export RAILS_LOG_TO_STDOUT="{{ rails_log_to_stdout }}"
+export DB_HOST="{{ db_host }}"
+export DB_PORT="{{ db_port }}"
+export DB_NAME="{{ db_name }}"
+export DB_USER="{{ db_user }}"
+export DB_PASSWORD="{{ db_password }}"
+
+./bundle exec rake db:migrate
+./bundle exec puma -b unix:///var/run/puma.sock -e $RAILS_ENV ../config.ru

@@ -1,0 +1,81 @@
+---
+- name: "installing packages on ubuntu"
+  ansible.builtin.apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+      - libpq-dev
+      - python3-psycopg2
+  when: ansible_os_family == 'Debian'
+
+- name: "installing packages on centos"
+  ansible.builtin.yum:
+    name:
+      - postgresql
+      - postgresql-server
+      - postgresql-contrib
+      - python-psycopg2
+      - postgresql-libs
+  when: ansible_os_family == 'RedHat'
+
+- name: "find data"
+  ansible.builtin.find: 
+    paths: /var/lib/pgsql/data
+    file_type: file
+    patterns: "PG_VERSION"
+  register: db_verion
+
+- name: "init db postgres"
+  ansible.builtin.command:  postgresql-setup initdb
+  when: db_verion.matched|int == 0
+  notify:
+   - Restart postgres
+
+- name: Start and enable the service
+  ansible.builtin.systemd:
+    name: postgresql
+    state: started
+    enabled: true
+      
+- name: "create db"
+  community.postgresql.postgresql_db:
+    name: "{{ rp_db_name }}"
+    comment: "app data base"
+    login_user: "postgres"
+    login_password: "postgres"
+  become: true
+  become_user: postgres
+
+- name: "create user"
+  community.postgresql.postgresql_user:
+    db: "{{ rp_db_name }}"
+    name: "postgres"
+    password: "postgres"
+    state: present
+    login_user: "postgres"
+    login_password: "postgres"
+  become: true
+  become_user: postgres
+
+- name: "create user"
+  community.postgresql.postgresql_user:
+    db: "{{ rp_db_name }}"
+    name: "{{ rp_db_user }}"
+    password: "{{ rp_db_password }}"
+    state: present
+    login_user: "postgres"
+    login_password: "postgres"
+  become: true
+  become_user: postgres
+
+- name: "add rights for users to connect using a password"
+  ansible.builtin.copy:
+    src: files/pg_hba.conf
+    dest: /var/lib/pgsql/data/pg_hba.conf
+    owner: postgres
+    group: postgres
+    mode: "0600"
+  when: ansible_os_family == 'RedHat'
+  notify:
+   - Restart postgres
+

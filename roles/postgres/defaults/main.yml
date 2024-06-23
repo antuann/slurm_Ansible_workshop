@@ -1,0 +1,8 @@
+---
+# defaults file for postgres
+rp_db_host: "127.0.0.1"
+rp_app_user: "app_user"
+rp_db_port: "5432"
+rp_db_name: "db_app"
+rp_db_user: "app_user"
+rp_db_password: "password"

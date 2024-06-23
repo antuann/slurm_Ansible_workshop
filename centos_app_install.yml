@@ -1,0 +1,88 @@
+---
+- name: install ruby
+  hosts: all
+  vars_files:
+    - app_settings.yml
+ 
+  tasks:
+  - name: "instal package"
+    ansible.builtin.yum:
+      name:
+        - git-core 
+        - zlib 
+        - zlib-devel 
+        - gcc-c++
+        - patch
+        - readline
+        - readline-devel
+        - libyaml-devel
+        - libffi-devel
+        - openssl-devel
+        - make
+        - bzip2
+        - autoconf
+        - automake
+        - libtool
+        - bison
+        - curl
+        - sqlite-devel
+        - postgresql-devel.x86_64
+
+  - name: "get rbenv from git https://github.com/rbenv/rbenv.git"
+    ansible.builtin.git:
+      repo: https://github.com/rbenv/rbenv.git
+      dest: /opt/rbenv
+      update: no
+
+  - name: "get rbenv-vars from git https://github.com/rbenv/rbenv-vars.git"
+    ansible.builtin.git:
+      repo: https://github.com/rbenv/rbenv-vars.git
+      dest: /opt/rbenv/plugins/rbenv-vars
+      update: no
+
+  - name: "get ruby-build from git https://github.com/rbenv/ruby-build.git"
+    ansible.builtin.git:
+      repo: https://github.com/rbenv/ruby-build.git
+      dest: /opt/rbenv/plugins/ruby-build
+      update: no
+
+  - name: "paths for rben executable files will be added to users bash profiles"
+    ansible.builtin.copy:
+      src: files/path_rbenv.sh
+      dest: /etc/profile.d/path_rbenv.sh
+      owner: root
+      group: root
+      mode: 0755
+  
+  - name: "I add the RBENV_ROOT variable to /etc/enviroment"
+    ansible.builtin.lineinfile:
+      path: /etc/enviroment
+      line: 'RBENV_ROOT=/opt/rbenv'
+      create: yes
+
+  - name: "in /etc/enviroment we correct the RBENV_ROOT variable if it is not correct"
+    ansible.builtin.lineinfile:
+      dest: /etc/enviroment
+      state: present
+      regexp: '^RBENV_ROOT'
+      line: 'RBENV_ROOT=/opt/rbenv'
+
+  - name: "allow {{ app_user }} user to edit the /opt/rbenv directory"
+    ansible.builtin.file:
+      path: /opt/rbenv
+      state: directory
+      recurse: true
+      owner: "{{ app_user }}"
+      group: "{{ app_user }}"
+  
+  - name: "ruby {{ version_ruby }} install"
+ #   remote_user: app_user
+    ansible.builtin.script: scripts/centos_install_ruby.sh {{ version_ruby }}
+    ignore_errors: true
+    when: ansible_os_family == 'RedHat'
+
+  - name: "Restart app"
+    ansible.builtin.service:
+      name: app
+      state: restarted
+

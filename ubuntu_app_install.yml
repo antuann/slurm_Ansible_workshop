@@ -1,0 +1,33 @@
+---
+- name: install ruby
+  hosts: all
+  vars_files:
+    - app_settings.yml
+  tasks:
+  - name: "instal package"
+    ansible.builtin.apt:
+      name:
+        - rbenv
+        - libxml2-dev
+  - name: "right user"
+    ansible.builtin.file:
+      path: /var/lib/gems
+      state: directory
+      recurse: true
+      owner: "{{ app_user }}"
+      group: "{{ app_user }}"
+
+- name: install ruby
+  hosts: all
+  vars:
+    version_ruby: "2.6.0"
+  become_method: su
+  become_user: app_user
+  vars_files:
+    - app_settings.yml
+ 
+  tasks:
+#  - name: "ruby {{ version_ruby }}install"
+#    ansible.builtin.script: scripts/install_ruby.sh {{ version_ruby }}
+#    ignore_errors: true
+ 

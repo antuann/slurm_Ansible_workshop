@@ -1,0 +1,12 @@
+---
+secret_key_base: "any string"
+rails_env: "production"
+rails_log_to_stdout: 1
+app_user: "app_user"
+db_host: "127.0.0.1"
+db_port: "5432"
+db_name: "db_app"
+db_user: "{{ app_user }}"
+db_password: "password"
+version_ruby: "2.6.0"
+public_ssh_key: "~/.ssh/id_rsa.pub"
