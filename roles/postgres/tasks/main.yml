@@ -24,18 +24,30 @@
     file_type: file
     patterns: "PG_VERSION"
   register: db_verion
+  when: ansible_os_family == 'RedHat'
 
-- name: "init db postgres"
+- name: "init db postgres Centos"
   ansible.builtin.command:  postgresql-setup initdb
   when: db_verion.matched|int == 0
+  ignore_errors: true
   notify:
    - Restart postgres
+  when: ansible_os_family == 'RedHat'
 
-- name: Start and enable the service
+- name: "Start and enable the service"
   ansible.builtin.systemd:
     name: postgresql
     state: started
     enabled: true
+
+- name: "Right change"
+  ansible.builtin.file:
+    path: /var/lib/postgresql/.ansible/tmp
+    state: directory
+    recurse: true
+    owner: postgres
+    group: postgres
+    mode: 0777
       
 - name: "create db"
   community.postgresql.postgresql_db:
@@ -65,6 +77,7 @@
     state: present
     login_user: "postgres"
     login_password: "postgres"
+    role_attr_flags: SUPERUSER
   become: true
   become_user: postgres
 

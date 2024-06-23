@@ -37,7 +37,7 @@
       group: root
       mode: 0644
     notify:
-    - Reload nginx
+    - Restart nginx
 
   - name: "Create nginx user"
     ansible.builtin.user:
@@ -46,13 +46,20 @@
       create_home: true
       shell: /bin/bash
     notify:
-    - Reload nginx
+    - Restart nginx
+ 
+  - name: "Start nginx"
+    ansible.builtin.service:
+      name: nginx
+      state: started
+
 
   - name: permit traffic in default zone for https service
     ansible.posix.firewalld:
       service: http
       permanent: true
       state: enabled
+    when: ansible_os_family == 'RedHat'
     notify:
     - Reload firewalld
 
@@ -67,11 +74,11 @@
         name: app
         state: restarted
 
-    - name: "Reload nginx"
+    - name: "Restart nginx"
       ansible.builtin.service:
         name: nginx
-        state: reloaded
-   
+        state: restarted
+
     - name: "Reload firewalld"
       ansible.builtin.service:
         name: firewalld

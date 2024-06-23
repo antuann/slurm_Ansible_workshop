@@ -81,27 +81,22 @@
   when: ansible_os_family == 'RedHat'
 
 - name: "instal package"
-  ansible.builtin.yum:
+  ansible.builtin.apt:
     name:
-      - git-core
-      - zlib
-      - zlib-devel
-      - gcc-c++
-      - patch
-      - readline
-      - readline-devel
-      - libyaml-devel
-      - libffi-devel
-      - openssl-devel
-      - make
-      - bzip2
-      - autoconf
-      - automake
-      - libtool
-      - bison
+      - git
       - curl
-      - sqlite-devel
-      - postgresql-devel.x86_64
+      - libssl-dev
+      - libreadline-dev
+      - zlib1g-dev
+      - autoconf
+      - bison
+      - build-essential
+      - libyaml-dev
+      - libreadline-dev
+      - libncurses5-dev
+      - libffi-dev
+      - libgdbm-dev
+      - nodejs
   when: ansible_os_family == 'Debian'
 
 - name: "get rbenv from git https://github.com/rbenv/rbenv.git"
@@ -152,10 +147,15 @@
     group: "{{ app_user }}"
   
 - name: "ruby {{ version_ruby }} install"
- # remote_user: app_user
-  ansible.builtin.script: scripts/centos_install_ruby.sh {{ version_ruby }}
+  ansible.builtin.script: scripts/install_ruby.sh {{ version_ruby }}
   ignore_errors: true
-  when: ansible_os_family == 'RedHat'
   notify:
     - Restart app
+
+- name: "ruby {{ version_ruby }} install"
+  ansible.builtin.script: scripts/centos_install_nodejs.sh {{ version_ruby }}
+  ignore_errors: true
+  notify:
+    - Restart app
+  when: ansible_os_family == 'RedHat'
 
